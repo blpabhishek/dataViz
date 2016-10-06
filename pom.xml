@@ -37,7 +37,7 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.minor.version}</artifactId>
             <version>${spark.version}</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -61,7 +61,7 @@
             <groupId>com.thoughtworks.datacommons</groupId>
             <artifactId>prep-buddy</artifactId>
             <version>0.5.0</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
