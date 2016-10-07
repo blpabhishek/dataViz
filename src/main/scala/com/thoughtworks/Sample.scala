@@ -16,25 +16,51 @@ object Sample {
     def preprocess(): Unit = {
         val sc: SparkContext = setContext()
         val textFile: RDD[String] = sc.textFile("data/RawStackOverflowData.csv")
-        val header: String = textFile.first()
-        val dataWithoutHeader = textFile.subtract(sc.parallelize(Array(header)))
-        val rdd: TransformableRDD = new TransformableRDD(dataWithoutHeader)
+        val rdd: TransformableRDD = removeHeader(sc, textFile)
+
         val sample: TransformableRDD = rdd.removeRows((record: RowRecord) => record.hasEmptyColumn)
         sample.sample(withReplacement = true, 0.005, 1).saveAsTextFile("data/sample")
         sample.saveAsTextFile("data/remove")
     }
 
-    def main(args: Array[String]): Unit = {
-        alienAggregation()
+    def filterOutlier(): Unit = {
+        val sc: SparkContext = setContext()
+        val textFile: RDD[String] = sc.textFile("data/avg.csv")
+        val rdd: TransformableRDD = removeHeader(sc, textFile)
 
+        rdd.removeRows((record: RowRecord) => {
+            record.select(2).toInt < 5
+        }).saveAsTextFile("data/filterSal")
+    }
+
+    def main(args: Array[String]): Unit = {
+        groupSalaryWise
+    }
+
+    def groupSalaryWise: Unit = {
+        val sc: SparkContext = setContext()
+        val textFile: RDD[String] = sc.textFile("data/countryWiseSalary")
+        val rdd: TransformableRDD = removeHeader(sc, textFile)
+        val filtered: TransformableRDD = rdd.removeRows((record: RowRecord) => record.hasEmptyColumn)
+        filtered.map((string: String) => {
+            val parse = CSV.parse(string)
+            (parse.select(0), parse.select(1))
+        })
+            .groupByKey().map((tuple: (String, Iterable[String])) => {
+            (tuple._1, tuple._2.map((s: String) => s.toInt).sum, tuple._2.size)
+        }).saveAsTextFile("data/countryAndSal")
+    }
+
+    def removeHeader(sc: SparkContext, textFile: RDD[String]): TransformableRDD = {
+        val header: String = textFile.first()
+        val dataWithoutHeader = textFile.subtract(sc.parallelize(Array(header)))
+        new TransformableRDD(dataWithoutHeader)
     }
 
     def alienAggregation(): Unit = {
         val sc: SparkContext = setContext()
         val textFile: RDD[String] = sc.textFile("data/alien.csv")
-        val header: String = textFile.first()
-        val dataWithoutHeader = textFile.subtract(sc.parallelize(Array(header)))
-        val rdd: TransformableRDD = new TransformableRDD(dataWithoutHeader)
+        val rdd: TransformableRDD = removeHeader(sc, textFile)
         val filtered: TransformableRDD = rdd.drop(2).removeRows((record: RowRecord) => record.hasEmptyColumn)
         filtered.map((string: String) => {
             val parse = CSV.parse(string)
